@@ -1,0 +1,7 @@
+<screen name="UserLeaguesStandingDialog" position="center,center" size="1500,840" flags="wfNoBorder" zPosition="99">
+    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/MyFPL/assets/images/dialog.png" size="1500,840" alphatest="on" scale="1"/>
+    <widget name="title" position="15,25" size="600,45" backgroundColor="#5dd5fd" foregroundColor="#37003c" font="Myfpl-Bold;36" transparent="1" zPosition="1"/>
+    <widget name="standing" position="8,105" size="1485,630" itemHeight="70" backgroundColor="white" foregroundColor="#37003c" backgroundColorSelected="#37003c" foregroundColorSelected="white" zPosition="1" transparent="1"/>
+    <widget name="next" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/MyFPL/assets/images/next.png" size="125,72" position="1340,740" zPosition="1" alphatest="on" scale="1"/>
+    <widget name="previous" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/MyFPL/assets/images/previous.png" size="125,60" position="20,745" zPosition="1" alphatest="on" scale="1"/>
+ </screen>

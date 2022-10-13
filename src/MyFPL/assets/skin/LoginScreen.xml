@@ -1,0 +1,9 @@
+<screen name="MyFplLogin" position="center,center" size="1920,1080" flags="wfNoBorder" backgroundColor="white">
+   <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/MyFPL/assets/images/back.png" position="0,0" size="1920,350" alphatest="on" scale="1"/>
+   <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/MyFPL/assets/images/logo.png" position="30,80" size="600,150" alphatest="on" scale="1"/>
+   <widget name="players" position="1200,0" size="550,350" alphatest="on" scale="1" zPosition="1"/>
+   <widget name="status" position="center,360" size="1280,40" backgroundColor="red" foregroundColor="white" valign="center" halign="center" font="Myfpl-Regular;30" zPosition="1"/>
+   <widget name="config" position="center,420" size="1280,220" font="Myfpl-Regular;32" itemHeight="70" enableWrapAround="1" transparent="1" backgroundColor="white" foregroundColor="black" foregroundColorSelected="white" backgroundColorSelected="#37003c" zPosition="2" />
+   <widget name="login_button" pixmap="/usr/lib/enigma2/python/Plugins/Extensions/MyFPL/assets/images/button-sign.png" scale="1" position="center,620" size="270,100"/>
+   <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/MyFPL/assets/images/premier-league-3-logo.png" scale="1" position="center,1000" size="270,55" alphatest="on" zPosition="100"/>
+</screen>

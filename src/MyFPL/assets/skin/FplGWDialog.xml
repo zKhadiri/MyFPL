@@ -1,0 +1,5 @@
+<screen name="UserGameWeeksDialog" position="center,center" size="1500,785" flags="wfNoBorder" zPosition="99">
+    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/MyFPL/assets/images/dialog.png" size="1500,785" alphatest="on" scale="1"/>
+    <eLabel text="Entry History" position="15,25" size="300,45" backgroundColor="#5dd5fd" foregroundColor="#37003c" font="Myfpl-Bold;36" transparent="1"/>
+    <widget name="events" position="8,97" size="1485,700" itemHeight="85" backgroundColor="white" foregroundColor="#37003c" backgroundColorSelected="#37003c" foregroundColorSelected="white" zPosition="1" transparent="1"/>
+ </screen>
