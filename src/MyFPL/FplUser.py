@@ -106,7 +106,7 @@ class MyFplUserDetails(Screen):
 
     def green(self):
         if self.user_details:
-            if self.user_id != self.user_details['current_gw']['highest_scoring_entry']:
+            if self.user_details['current_gw']['highest_scoring_entry'] and self.user_id != self.user_details['current_gw']['highest_scoring_entry']:
                 self.user_id = self.user_details['current_gw']['highest_scoring_entry']
                 self['LeaguesLayout'].hide()
                 self['PlayersLayout'].hide()

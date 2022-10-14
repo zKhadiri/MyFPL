@@ -154,16 +154,17 @@ class MyFplPlayerLayout(GUIComponent):
             gw_detail['current_gw_rank'] = players_detail['rank']
             gw_detail['event_transfers'] = players_detail['event_transfers']
             gw_detail['event_transfers_cost'] = players_detail['event_transfers_cost']
-            self.gwDetailsContent.setList([(gw_detail,)])
-
+            
             _gk = []
             _def = []
             _med = []
             _for = []
             _subs = []
+            mypoints = 0
             for _,v in players_detail.items():
                 if isinstance(v, dict):
                     if v['position'] < 12:
+                        mypoints += self.calcPlayerPoints(v)
                         if v['element_type'] == 'Defender':
                             _def.append((v,))
                         elif v['element_type'] == 'Midfielder':
@@ -173,13 +174,19 @@ class MyFplPlayerLayout(GUIComponent):
                         elif v['element_type'] == 'Goalkeeper':
                             _gk.append((v,))
                     else:
+                        if self.active_chip and self.active_chip == 'bboost':
+                            mypoints += self.calcPlayerPoints(v)
                         _subs.append((v,))
+
+            if gw_detail['finished'] is False:
+                gw_detail['UserPoints'] = mypoints
 
             self.gkContent.setList([(_gk, )])
             self.dfContent.setList([(None,_def, )])
             self.mdContent.setList([(None,None, _med, )])
             self.atContent.setList([(None,None, None,_for, )])
             self.subsContent.setList([(None,None, None,None,_subs, )])
+            self.gwDetailsContent.setList([(gw_detail,)])
 
 
     def buildGwDetailsEntry(self, gw):
@@ -189,10 +196,14 @@ class MyFplPlayerLayout(GUIComponent):
         res.append(MultiContentEntryText(pos=(70, 100),size=(180,33),text='Average Points', font=4, flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
         res.append(MultiContentEntryText(pos=(70, 138),size=(180,33),text=str(gw['average_entry_score']), flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
 
-        res.append(MultiContentEntryText(pos=(340, 100),size=(180,33),text='Highest Points', font=1, flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
-        res.append(MultiContentEntryText(pos=(340, 138),size=(180,33),text=str(gw['highest_score']), flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
+        if gw['highest_score']:
+            res.append(MultiContentEntryText(pos=(340, 100),size=(180,33),text='Highest Points', font=1, flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
+            res.append(MultiContentEntryText(pos=(340, 138),size=(180,33),text=str(gw['highest_score']), flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
 
-        res.append(MultiContentEntryText(pos=(520, 100),size=(33,33),text=str(html.unescape("&#xe941;")), font=5, flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('green'), backcolor=MultiContentTemplateColor('white')))
+            res.append(MultiContentEntryText(pos=(520, 100),size=(33,33),text=str(html.unescape("&#xe941;")), font=5, flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('green'), backcolor=MultiContentTemplateColor('white')))
+        else:
+            res.append(MultiContentEntryText(pos=(340, 100),size=(180,33),text='Highest Points', flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
+            res.append(MultiContentEntryText(pos=(340, 138),size=(180,33),text='-', flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
 
         res.append(MultiContentEntryText(pos=(860, 100),size=(180,33),text='GW Rank', font=4, flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
         res.append(MultiContentEntryText(pos=(860, 138),size=(180,33),text=str(gw['current_gw_rank']), flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, color=MultiContentTemplateColor('#37003c'), backcolor=MultiContentTemplateColor('white')))
@@ -282,7 +293,7 @@ class MyFplPlayerLayout(GUIComponent):
                 res.append(MultiContentEntryPixmapAlphaBlend(pos=(x+130,55),size=(24,24),png=self.totwIcon))
             res.append(MultiContentEntryText(pos=(x, 80),size=(180,35),text=str(player['web_name']), font=1, flags=RT_VALIGN_CENTER|RT_HALIGN_CENTER, color=name_text_color, backcolor=name_back_color))
             
-            score = player['stats']['total_points'] if player['multiplier'] == 0 else player['stats']['total_points'] * player['multiplier']
+            score = self.calcPlayerPoints(player)
             if 'game_started' in player:
                 if player['game_started'] is False:
                     # if player['game_finished'] is False:
@@ -294,6 +305,10 @@ class MyFplPlayerLayout(GUIComponent):
             x += 200 + margin
 
         return res
+
+    def calcPlayerPoints(self, player: dict) -> int:
+        points = player['stats']['total_points'] if player['multiplier'] == 0 else player['stats']['total_points'] * player['multiplier']
+        return points
 
     def downloadShirt(self, shirt_path, shirt, idx, _list):
         url = f'https://fantasy.premierleague.com/dist/img/shirts/standard/{shirt}'
