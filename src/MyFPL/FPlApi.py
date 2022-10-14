@@ -154,7 +154,8 @@ class FPlAPi:
                         user_players[player['id']]['team_code'] = player['team_code']
                         user_players[player['id']]['status'] = player['status']
                         user_players[player['id']]['chance_of_playing_next_round'] = player['chance_of_playing_next_round']
-                        if 'fixtures' in self.bootstrapData:
+                        curr_gw = next(event for event in self.bootstrapData['events'] if event['id'] == gw)
+                        if 'fixtures' in self.bootstrapData and curr_gw['finished'] is False:
                             for team in self.bootstrapData['fixtures']:
                                 if user_players[player['id']]['team'] in (team['team_a'], team['team_h']):
                                     if user_players[player['id']]['team'] == team['team_a']:

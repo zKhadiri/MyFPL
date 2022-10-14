@@ -258,7 +258,9 @@ class UserGameWeeksDialog(Screen):
             res.append(MultiContentEntryText(pos=(20,0),size=(90,85), font=1,text=f"GW{event['event']}",flags=RT_VALIGN_CENTER|RT_HALIGN_LEFT))
             res.append(MultiContentEntryText(pos=(140,0),size=(130,85),text=str(self.fplApi.formatNb(event['overall_rank'])),flags=RT_VALIGN_CENTER|RT_HALIGN_LEFT))
 
-            icon = self.upicon if event['rank'] < event['overall_rank'] else self.downicon if event['rank'] > event['overall_rank'] else self.sameicon
+            icon = self.sameicon
+            if event['rank']:
+                icon = self.upicon if event['rank'] < event['overall_rank'] else self.downicon if event['rank'] > event['overall_rank'] else self.sameicon
             res.append(MultiContentEntryPixmapAlphaBlend(pos=(295,0),size=(25,85),png=icon, flags=BT_SCALE|BT_VALIGN_CENTER|BT_KEEP_ASPECT_RATIO))
 
             res.append(MultiContentEntryText(pos=(355,0),size=(130,85),text=str(self.fplApi.formatNb(event['total_points'])),flags=RT_VALIGN_CENTER|RT_HALIGN_LEFT))
