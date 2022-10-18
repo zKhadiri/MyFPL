@@ -1,14 +1,18 @@
 import json
 import requests
+from sqlite3 import connect
+from datetime import datetime
 from twisted.web.client import getPage
 from twisted.internet.protocol import Factory
 from twisted.internet.defer import inlineCallbacks
 from .components.tools import WebClientContextFactory
+from .components.commons import MyFplConfig as conf
 
 head = {b"User-Agent": b"Dalvik/2.1.0 (Linux; U; Android 5.1; PRO 5 Build/LMY47D)"}
 
-Factory.noisy = False
+DB_PATH = '/usr/lib/enigma2/python/Plugins/Extensions/MyFPL/MyFPL.db'
 
+Factory.noisy = False
 
 class FPlAPi:
 
@@ -17,6 +21,7 @@ class FPlAPi:
         self.bootstrapData = None
         self.playersPoints = None
         self.userData = None
+        self.fplDB = MyfplDB()
 
     def login(self, email: str, password: str) -> dict:
         payload = {
@@ -104,11 +109,18 @@ class FPlAPi:
 
     @inlineCallbacks
     def getBootstrapData(self, callback, loadCurrentFixtures=False):
-        url = f'{self.baseApiUrl}/bootstrap-static/'
-        sniFactory = WebClientContextFactory(url)
-        data = yield getPage(str.encode(url), contextFactory=sniFactory, method=b"GET", headers=head, timeout=25).addErrback(self.errorCall)
+        data = self.getCachedBootstrapData()
+        cache_data = False
+        if data is None:
+            url = f'{self.baseApiUrl}/bootstrap-static/'
+            sniFactory = WebClientContextFactory(url)
+            data = yield getPage(str.encode(url), contextFactory=sniFactory, method=b"GET", headers=head, timeout=25).addErrback(self.errorCall)
+            cache_data = True
         if data:
             data = json.loads(data)
+            if cache_data:
+                self.fplDB.execQuery('delete from BOOTSTRAP')
+                self.fplDB.execQuery('INSERT INTO BOOTSTRAP(BOOTSTRAP_DATA, LAST_UPDATE) values (?, ?)', (json.dumps(data, ensure_ascii=False), datetime.now().strftime('%d-%m-%Y %H:%M'), ))
             self.bootstrapData = data
             if loadCurrentFixtures:
                 curr_gw = next(event for event in self.bootstrapData['events'] if event['is_current'])
@@ -118,6 +130,16 @@ class FPlAPi:
                     callback(True)
             else:
                 callback(True)
+
+    def getCachedBootstrapData(self):
+        data = self.fplDB.queryData('select * from BOOTSTRAP')
+        if data:
+            data_date = datetime.strptime(data[1], '%d-%m-%Y %H:%M')
+            diff = datetime.now() - data_date
+            hours = diff.days * 24 + diff.seconds // 3600
+            if hours < 1:
+                return data[0]
+        return None
 
     @inlineCallbacks
     def getFixtures(self, gw, callback):
@@ -132,7 +154,23 @@ class FPlAPi:
 
     @inlineCallbacks
     def getUserPlayers(self, user_id, gw, callback):
-        url = f'{self.baseApiUrl}/entry/{user_id}/event/{gw}/picks/'
+        cache_data = False
+        if user_id == int(conf.user_id.value):
+            if gw['finished']:
+                ret = self.fplDB.queryData(f'SELECT * from USER where USER_ID=?', (user_id,))
+                if ret:
+                    data = self.fplDB.queryData(f'SELECT data from USER_GWS where GW=? and USER_ID=?', (gw['id'], user_id,))
+                    if data:
+                        data = json.loads(data[0])
+                        callback(data)
+                        return
+                    else:
+                        cache_data = True
+                else:
+                    cache_data = True
+                    self.fplDB.execQuery('INSERT INTO USER(USER_ID) values (?)', (user_id, ))
+
+        url = f"{self.baseApiUrl}/entry/{user_id}/event/{gw['id']}/picks/"
         sniFactory = WebClientContextFactory(url)
         data = yield getPage(str.encode(url), contextFactory=sniFactory, method=b"GET", headers=head, timeout=10).addErrback(self.errorCall)
         if data:
@@ -154,8 +192,7 @@ class FPlAPi:
                         user_players[player['id']]['team_code'] = player['team_code']
                         user_players[player['id']]['status'] = player['status']
                         user_players[player['id']]['chance_of_playing_next_round'] = player['chance_of_playing_next_round']
-                        curr_gw = next(event for event in self.bootstrapData['events'] if event['id'] == gw)
-                        if 'fixtures' in self.bootstrapData and curr_gw['finished'] is False:
+                        if 'fixtures' in self.bootstrapData and gw['finished'] is False:
                             for team in self.bootstrapData['fixtures']:
                                 if user_players[player['id']]['team'] in (team['team_a'], team['team_h']):
                                     if user_players[player['id']]['team'] == team['team_a']:
@@ -170,6 +207,8 @@ class FPlAPi:
                     for player in self.playersPoints['elements']:
                         if player['id'] in user_players:
                             user_players[player['id']]['stats'] = player['stats']
+                if cache_data:
+                    self.fplDB.execQuery('INSERT INTO USER_GWS(GW, DATA, USER_ID) values (?, ?, ?)', (gw['id'], json.dumps(user_players, ensure_ascii=False), user_id))
                 callback(user_players)
 
     #TODO get user current team
@@ -188,11 +227,18 @@ class FPlAPi:
 
     @inlineCallbacks
     def loadPlayerPoints(self, gw, callback):
-        url = f'{self.baseApiUrl}/event/{gw}/live/'
+        if gw['finished']:
+            ret = self.fplDB.queryData(f'SELECT DATA from GWS_PLAYERS_POINTS where GW=?', (gw['id'],))
+            if ret:
+                self.playersPoints = json.loads(ret[0])
+                callback()
+                return
+        url = f"{self.baseApiUrl}/event/{gw['id']}/live/"
         sniFactory = WebClientContextFactory(url)
         data = yield getPage(str.encode(url), contextFactory=sniFactory, method=b"GET", headers=head, timeout=10).addErrback(self.errorCall)
         if data:
             data = json.loads(data)
+            self.fplDB.execQuery('INSERT INTO GWS_PLAYERS_POINTS(GW, DATA) values (?, ?)', (gw['id'], json.dumps(data, ensure_ascii=False), ))
             self.playersPoints = data
             callback()
 
@@ -213,3 +259,26 @@ class FPlAPi:
         if data:
             data = json.loads(data)
             callback(data)
+
+
+class MyfplDB:
+    
+    def __init__(self):
+        self.createTables()
+
+    def createTables(self):
+        self.execQuery('CREATE TABLE IF NOT EXISTS `BOOTSTRAP` (`BOOTSTRAP_DATA` JSON , `LAST_UPDATE` DATE)')
+        self.execQuery('CREATE TABLE IF NOT EXISTS `USER` (`USER_ID` INTEGER PRIMARY KEY)')
+        self.execQuery('CREATE TABLE IF NOT EXISTS `USER_GWS` (`GW` INTEGER PRIMARY KEY, `DATA` JSON, `USER_ID` INTEGER, FOREIGN KEY(USER_ID) REFERENCES USER (USER_ID) ON DELETE CASCADE)')
+        self.execQuery('CREATE TABLE IF NOT EXISTS `GWS_PLAYERS_POINTS` (`GW` INTEGER, `DATA` JSON)')
+
+    def execQuery(self, cmd, params=()):
+        with connect(DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute(cmd, params)
+
+    def queryData(self, cmd, params=()):
+        with connect(DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute(cmd, params)
+            return cur.fetchone()

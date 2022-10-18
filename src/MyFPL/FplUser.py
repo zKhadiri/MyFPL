@@ -63,7 +63,7 @@ class MyFplUserDetails(Screen):
 
     def getUserPlayers(self, data=None, gw=None):
         if not self.fplApi.playersPoints or gw is not None:
-            curr_gw = self.user_details['current_gw']['id']
+            curr_gw = self.user_details['current_gw']
             self.fplApi.loadPlayerPoints(curr_gw, self.getUserPlayers)
         else:
             if data:
@@ -71,7 +71,7 @@ class MyFplUserDetails(Screen):
                     self.showUserPlayersDetails(data)
             else:
                 if self.user_details:
-                    curr_gw = self.user_details['current_gw']['id']
+                    curr_gw = self.user_details['current_gw']
                     self.fplApi.getUserPlayers(self.user_id, curr_gw, self.getUserPlayers)
 
     def showUserPlayersDetails(self, user_players=None):
