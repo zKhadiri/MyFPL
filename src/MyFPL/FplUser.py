@@ -166,16 +166,15 @@ class MyFplUserDetails(Screen):
             self.close()
 
     def exit(self, ret=None):
-        if not ret:
-            if int(conf.user_id.value) != self.user_id:
-                gw = self.user_details[self.user_id]['current_event']
-                self.user_id = int(conf.user_id.value)
-                self['LeaguesLayout'].hide()
-                self['PlayersLayout'].hide()
-                self['UserLayout'].hide()
-                self.getUserData(gw=gw)
-            else:
-                self.close()
+        if int(conf.user_id.value) != self.user_id:
+            gw = self.user_details[self.user_id]['current_event']
+            self.user_id = int(conf.user_id.value)
+            self['LeaguesLayout'].hide()
+            self['PlayersLayout'].hide()
+            self['UserLayout'].hide()
+            self.getUserData(gw=gw)
+        else:
+            self.close()
 
 
 class UserGameWeeksDialog(Screen):

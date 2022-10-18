@@ -38,8 +38,11 @@ class FPlAPi:
                 if 'state' in params:
                     if params['state'] == 'success':
                         account_detail = session.get('https://fantasy.premierleague.com/api/me/', headers=head).json()
-                        player_entry_id = account_detail['player']['entry']
-                        return {'status': 'success', 'player_id': player_entry_id}
+                        if isinstance(account_detail, dict):
+                            player_entry_id = account_detail['player']['entry']
+                            return {'status': 'success', 'player_id': player_entry_id}
+                        else:
+                            return {'status': 'failed', 'reason': account_detail}
                     elif params['state'] == 'fail':
                         return {'status': 'failed', 'reason': params['reason']}
             except Exception as e:
@@ -105,7 +108,7 @@ class FPlAPi:
                         self.userData['current_gw'] = curr_gw
                 callback(self.userData, gw=gw)
             else:
-                callback('No data found for this user')
+                callback('The game is being updated.')
 
     @inlineCallbacks
     def getBootstrapData(self, callback, loadCurrentFixtures=False):
